@@ -6,7 +6,7 @@ const collections = [
     image: 'assets/casamento.webp',
     alt: 'Casal recém-casado se abraça sob a luz dourada',
     description: 'Da ansiedade antes da cerimônia à pista cheia no final da noite. Uma coleção sobre gestos pequenos, pessoas queridas e a alegria de escolher caminhar juntos.',
-    photos: ['assets/casamento.webp', 'assets/casamento-2.webp', 'assets/casamento-3.webp']
+    photos: ['assets/casamento.webp', 'assets/casamento-2.webp', 'assets/casamento-3.webp', 'assets/casamento-4.webp']
   },
   {
     key: 'formaturas',
@@ -15,7 +15,7 @@ const collections = [
     image: 'assets/formatura.webp',
     alt: 'Formanda celebra com sua família',
     description: 'Tem um mundo inteiro por trás de uma conquista: os dias difíceis, quem torceu junto e a coragem de continuar. Vamos guardar a celebração de tudo isso.',
-    photos: ['assets/formatura.webp', 'assets/formatura-2.webp', 'assets/formatura-3.webp']
+    photos: ['assets/formatura.webp', 'assets/formatura-2.webp', 'assets/formatura-3.webp', 'assets/formatura-4.webp']
   },
   {
     key: 'gestantes',
@@ -24,7 +24,7 @@ const collections = [
     image: 'assets/gestante.webp',
     alt: 'Casal durante a espera de um bebê',
     description: 'A espera, o chá de bebê, os primeiros dias. Fotografias com delicadeza e tempo para acolher essa fase que passa tão depressa.',
-    photos: ['assets/gestante.webp', 'assets/gestante-2.webp', 'assets/gestante-3.webp']
+    photos: ['assets/gestante.webp', 'assets/gestante-2.webp', 'assets/gestante-3.webp', 'assets/gestante-4.webp']
   },
   {
     key: 'familias',
@@ -33,7 +33,7 @@ const collections = [
     image: 'assets/familia.webp',
     alt: 'Família rindo em um jardim ao entardecer',
     description: 'O jeito de se abraçar, a risada conhecida, as pequenas aventuras de uma tarde juntos. Retratos para se reconhecer no que realmente importa.',
-    photos: ['assets/familia.webp', 'assets/familia-2.webp', 'assets/familia-3.webp']
+    photos: ['assets/familia.webp', 'assets/familia-2.webp', 'assets/familia-3.webp', 'assets/familia-4.webp']
   }
 ];
 
@@ -152,7 +152,6 @@ function renderCollection(index) {
   document.getElementById('dialog-overline').textContent = item.overline;
   document.getElementById('dialog-title').textContent = item.title;
   document.getElementById('dialog-description').textContent = item.description;
-  document.getElementById('dialog-count').textContent = `0${currentIndex + 1} / 0${collections.length}`;
   
   const thumbnails = document.getElementById('dialog-thumbnails');
   thumbnails.replaceChildren();
@@ -172,13 +171,20 @@ function renderCollection(index) {
   showPhoto(0);
 }
 
-document.querySelectorAll('[data-collection]').forEach(card => {
+document.querySelectorAll('.carousel-item[data-category]').forEach(card => {
   card.addEventListener('click', () => {
     isDialogClosing = false;
     dialog.classList.remove('is-closing');
-    renderCollection(collections.findIndex(item => item.key === card.dataset.collection));
-    dialog.showModal();
-    document.body.classList.add('dialog-open');
+    const colIdx = collections.findIndex(item => item.key === card.dataset.category);
+    if (colIdx >= 0) {
+      renderCollection(colIdx);
+      const photoIdx = parseInt(card.dataset.photoIdx, 10);
+      if (!isNaN(photoIdx)) {
+        showPhoto(photoIdx);
+      }
+      dialog.showModal();
+      document.body.classList.add('dialog-open');
+    }
   });
 });
 
@@ -212,8 +218,6 @@ dialog.addEventListener('cancel', event => {
 });
 dialog.addEventListener('close', () => document.body.classList.remove('dialog-open'));
 
-document.getElementById('dialog-prev').addEventListener('click', () => renderCollection(currentIndex - 1));
-document.getElementById('dialog-next').addEventListener('click', () => renderCollection(currentIndex + 1));
 document.getElementById('dialog-contact').addEventListener('click', closeDialog);
 
 // Keyboard navigation inside modal gallery
@@ -224,15 +228,11 @@ document.addEventListener('keydown', event => {
     event.preventDefault();
     if (currentPhotoIndex < currentCollection.photos.length - 1) {
       showPhoto(currentPhotoIndex + 1);
-    } else {
-      renderCollection(currentIndex + 1);
     }
   } else if (event.key === 'ArrowLeft') {
     event.preventDefault();
     if (currentPhotoIndex > 0) {
       showPhoto(currentPhotoIndex - 1);
-    } else {
-      renderCollection(currentIndex - 1);
     }
   }
 });
@@ -309,84 +309,50 @@ if ('IntersectionObserver' in window) {
 }
 
 /* -------------------------------------------------------------
- * 6. Collections Mobile Stacking with Depth & Scale
+ * 6. Category Carousels Navigation (Instagram-style Dots)
  * ------------------------------------------------------------- */
-const collectionStack = document.querySelector('.collection-stack');
-const collectionStage = collectionStack.querySelector('.collection-grid');
-const stackCards = [...collectionStage.querySelectorAll('.collection-card')];
-let collectionFrame = 0;
+document.querySelectorAll('.category-block').forEach(block => {
+  const carousel = block.querySelector('.category-carousel');
+  const dots = [...block.querySelectorAll('.cat-dot')];
+  const items = [...carousel.querySelectorAll('.carousel-item')];
+  if (!items.length) return;
 
-function updateCollectionStack() {
-  collectionFrame = 0;
-  if (!mobileLayout.matches || !prefersMotion.matches) {
-    collectionStack.classList.remove('is-enhanced');
-    stackCards.forEach(card => {
-      card.style.removeProperty('--entry');
-      card.style.removeProperty('--card-scale');
-      card.style.removeProperty('--card-dim');
-      card.style.removeProperty('--card-opacity');
-      card.style.removeProperty('--peek-opacity');
-      card.style.removeProperty('z-index');
-      card.style.removeProperty('pointer-events');
-    });
-    return;
+  function scrollToPhoto(index) {
+    if (index < 0 || index >= items.length) return;
+    const targetItem = items[index];
+    const offset = targetItem.offsetLeft - carousel.offsetLeft;
+    carousel.scrollTo({ left: offset, behavior: calmMotion.matches ? 'instant' : 'smooth' });
+    updateActiveDot(index);
   }
-  collectionStack.classList.add('is-enhanced');
-  const available = collectionStack.offsetHeight - collectionStage.offsetHeight;
-  const travel = Math.max(1, available - window.innerHeight * 0.16);
-  const rawProgress = (74 - collectionStack.getBoundingClientRect().top) / travel;
-  const progress = Math.min(stackCards.length - 1, Math.max(0, rawProgress * (stackCards.length - 1)));
-  const activeIndex = Math.floor(progress);
-  
-  stackCards.forEach((card, index) => {
-    let entry = 0;
-    if (index > 0) {
-      if (progress <= index - 1) {
-        entry = 1; // Parked in peek position at bottom
-      } else if (progress >= index) {
-        entry = 0; // Fully entered at top
-      } else {
-        const step = progress - (index - 1);
-        entry = 1 - step; // Smooth glide upwards
+
+  function updateActiveDot(index) {
+    dots.forEach((dot, idx) => {
+      const isActive = idx === index;
+      dot.classList.toggle('is-active', isActive);
+      dot.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+  }
+
+  function onScroll() {
+    const scrollLeft = carousel.scrollLeft;
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    items.forEach((item, idx) => {
+      const diff = Math.abs(item.offsetLeft - carousel.offsetLeft - scrollLeft);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
       }
-    }
-    card.style.setProperty('--entry', entry.toFixed(4));
-    
-    // Scale down and softly dim previous cards under incoming card
-    if (index < stackCards.length - 1) {
-      const overlap = Math.min(1, Math.max(0, progress - index));
-      const scale = (1 - overlap * 0.048).toFixed(3);
-      const dim = (overlap * 0.28).toFixed(3);
-      card.style.setProperty('--card-scale', scale);
-      card.style.setProperty('--card-dim', dim);
-    } else {
-      card.style.setProperty('--card-scale', '1');
-      card.style.setProperty('--card-dim', '0');
-    }
+    });
+    updateActiveDot(closestIdx);
+  }
 
-    // Only cards up to the active card + the next peeking card are visible
-    if (index <= activeIndex + 1) {
-      card.style.setProperty('--card-opacity', '1');
-      card.style.pointerEvents = 'auto';
-    } else {
-      card.style.setProperty('--card-opacity', '0');
-      card.style.pointerEvents = 'none';
-    }
-
-    card.style.zIndex = String(index + 1);
-
-    // Peek badge fades out as card reaches main view
-    const peekOpacity = index === 0 ? 0 : Math.min(1, Math.max(0, (entry - 0.2) / 0.5));
-    card.style.setProperty('--peek-opacity', peekOpacity.toFixed(2));
+  dots.forEach((dot, idx) => {
+    dot.addEventListener('click', () => scrollToPhoto(idx));
   });
-}
 
-function scheduleCollections() {
-  if (!collectionFrame) collectionFrame = requestAnimationFrame(updateCollectionStack);
-}
-window.addEventListener('scroll', scheduleCollections, { passive: true });
-window.addEventListener('resize', scheduleCollections, { passive: true });
-scheduleCollections();
+  carousel.addEventListener('scroll', onScroll, { passive: true });
+});
 
 /* -------------------------------------------------------------
  * 7. Process Timeline on Mobile
@@ -397,16 +363,23 @@ let timelineFrame = 0;
 
 function updateTimeline() {
   timelineFrame = 0;
-  if (!mobileLayout.matches) return;
-  const dots = stepCards.map(card => card.offsetTop + 42);
-  const length = Math.max(1, dots.at(-1) - dots[0]);
-  const top = stepsTrack.getBoundingClientRect().top + dots[0];
-  const progress = Math.min(1, Math.max(0, (window.innerHeight * 0.45 - top) / length));
-  stepsTrack.style.setProperty('--track-top', `${dots[0]}px`);
-  stepsTrack.style.setProperty('--track-length', `${length}px`);
-  stepsTrack.style.setProperty('--track-fill', `${length * progress}px`);
-  const current = progress >= 1 ? stepCards.length - 1 : Math.min(stepCards.length - 1, Math.floor(progress * (stepCards.length - 1) + 0.5));
-  stepCards.forEach((card, index) => card.classList.toggle('is-current', index === current));
+  if (!mobileLayout.matches) {
+    stepCards.forEach(card => card.classList.remove('is-current'));
+    return;
+  }
+  const viewportCenter = window.innerHeight * 0.45;
+  let activeIndex = 0;
+  let minDistance = Infinity;
+  stepCards.forEach((card, index) => {
+    const rect = card.getBoundingClientRect();
+    const cardCenter = rect.top + rect.height / 2;
+    const dist = Math.abs(cardCenter - viewportCenter);
+    if (dist < minDistance) {
+      minDistance = dist;
+      activeIndex = index;
+    }
+  });
+  stepCards.forEach((card, index) => card.classList.toggle('is-current', index === activeIndex));
 }
 
 function scheduleTimeline() {
@@ -422,8 +395,6 @@ scheduleTimeline();
 const planTrack = document.querySelector('.plan-grid');
 const planCards = [...planTrack.querySelectorAll('.plan')];
 const planDots = [...document.querySelectorAll('.plan-dot')];
-const planPrevBtn = document.querySelector('.plan-prev');
-const planNextBtn = document.querySelector('.plan-next');
 let activePlan = 1;
 let planFrame = 0;
 
@@ -457,8 +428,6 @@ function updatePlanState() {
     dot.classList.toggle('is-active', isActive);
     dot.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
-  if (planPrevBtn) planPrevBtn.disabled = nearest <= 0;
-  if (planNextBtn) planNextBtn.disabled = nearest >= planCards.length - 1;
 }
 
 planTrack.addEventListener('scroll', () => {
@@ -478,9 +447,6 @@ planTrack.addEventListener('keydown', event => {
 planDots.forEach((dot, index) => {
   dot.addEventListener('click', () => centerPlan(index));
 });
-
-if (planPrevBtn) planPrevBtn.addEventListener('click', () => centerPlan(activePlan - 1));
-if (planNextBtn) planNextBtn.addEventListener('click', () => centerPlan(activePlan + 1));
 
 planCards.forEach((card, index) => {
   card.addEventListener('click', (e) => {
