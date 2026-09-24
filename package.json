@@ -1,0 +1,14 @@
+{
+  "name": "fotografia-atelie-memoria",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'Build complete'",
+    "lint": "node -c server.js assets/app.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

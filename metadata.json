@@ -1,0 +1,8 @@
+{
+  "name": "Ateliê Memória — Fotografia Autoral",
+  "description": "Ateliê Memória — fotografia sensível para casamentos, formaturas, gestantes e famílias. Conheça as coleções e encontre a experiência ideal para a sua história.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
